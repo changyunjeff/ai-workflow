@@ -1,0 +1,46 @@
+{
+  "attempts": {
+    "extract": 1,
+    "summarize": 1
+  },
+  "history": [
+    {
+      "at": "2026-11-14 22:29:09",
+      "station": "extract",
+      "state": "running",
+      "note": ""
+    },
+    {
+      "at": "2026-11-14 22:29:11",
+      "station": "extract",
+      "state": "produced",
+      "note": "claude, 2.7s, 135 chars"
+    },
+    {
+      "at": "2026-11-14 22:29:12",
+      "station": "summarize",
+      "state": "running",
+      "note": ""
+    },
+    {
+      "at": "2026-11-14 22:29:14",
+      "station": "summarize",
+      "state": "produced",
+      "note": "claude, 2.4s, 120 chars"
+    },
+    {
+      "at": "2026-11-14 22:29:14",
+      "station": "gate_summary",
+      "state": "passed",
+      "note": "120 chars"
+    },
+    {
+      "at": "2026-11-14 22:29:14",
+      "station": "finish",
+      "state": "done",
+      "note": ""
+    }
+  ],
+  "station": "finish",
+  "state": "done"
+}

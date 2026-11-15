@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "line-canvas",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["app/server.py", "--lines", "lines", "--port", "8765"],
+      "port": 8765
+    }
+  ]
+}

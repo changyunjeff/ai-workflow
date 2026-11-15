@@ -1,0 +1,109 @@
+{
+  "id": "article-summary",
+  "name": "文章摘要线",
+  "input": "一篇中文文章",
+  "output": "一段 60 到 120 字的摘要",
+  "retire": "这是试验用的玩具线，试验做完就整条删掉",
+  "worker": "claude",
+  "model": "haiku",
+  "designer_model": "sonnet",
+  "version": 1,
+  "approved_version": null,
+  "approved_at": null,
+  "changed_by": "AI",
+  "changed_at": "2026-11-14 23:10",
+  "flow": [
+    "in",
+    "extract",
+    "summarize",
+    "gate",
+    "review",
+    "out"
+  ],
+  "nodes": [
+    {
+      "id": "in",
+      "kind": "source",
+      "title": "一篇文章",
+      "file": "00-input.md"
+    },
+    {
+      "id": "extract",
+      "kind": "station",
+      "title": "提要点",
+      "input": "00-input.md",
+      "output": "10-points.md",
+      "timeout": 300,
+      "spec": "从输入的文章里提取 3 到 5 条要点。\n每条一行，以“- ”开头，每条不超过 40 个字。\n只写文章里有的内容，不加自己的看法。"
+    },
+    {
+      "id": "summarize",
+      "kind": "station",
+      "title": "写摘要",
+      "input": "10-points.md",
+      "output": "20-summary.md",
+      "timeout": 300,
+      "spec": "根据输入的要点写一段中文摘要。\n最多 3 句话，只留最重要的事实，次要细节不写。\n如果是被退回重写，按退回理由修改。"
+    },
+    {
+      "id": "gate",
+      "kind": "gate",
+      "judge": "machine",
+      "title": "字数和格式",
+      "file": "20-summary.md",
+      "checks": {
+        "min_chars": 60,
+        "max_chars": 120,
+        "single_paragraph": true,
+        "no_preamble": true
+      },
+      "on_fail": "summarize",
+      "max_tries": 3
+    },
+    {
+      "id": "review",
+      "kind": "gate",
+      "judge": "human",
+      "title": "验收",
+      "file": "20-summary.md",
+      "points": "读着通顺、没有编造、愿意直接拿去用。",
+      "on_fail": "summarize"
+    },
+    {
+      "id": "out",
+      "kind": "product",
+      "title": "一段摘要",
+      "file": "20-summary.md"
+    }
+  ],
+  "layout": {
+    "in": [
+      14,
+      150
+    ],
+    "extract": [
+      140,
+      150
+    ],
+    "summarize": [
+      290,
+      150
+    ],
+    "gate": [
+      440,
+      150
+    ],
+    "review": [
+      587,
+      150
+    ],
+    "out": [
+      740,
+      150
+    ],
+    "stop": [
+      480,
+      318
+    ]
+  }
+}

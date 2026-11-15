@@ -1,0 +1,21 @@
+# front-end dependencies and build output (rebuild with: cd app/web && npm install && npm run build)
+app/web/node_modules/
+app/web/dist/
+
+# Python caches
+__pycache__/
+
+# throwaway test line created by app/tests
+lines/_test-stub/
+
+# per-run data of real lines: work items, trial runs, AI proposals
+lines/*/items/
+lines/*/trials/
+lines/*/proposals/
+
+**/node_modules/
+**/dist/
+**/build/
+
+.env
+.DS_Store

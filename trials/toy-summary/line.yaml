@@ -1,0 +1,144 @@
+# 玩具样线：一篇文章进，一段摘要出。
+# 用途：只测执行器（conductor）能不能满足三条判定线，不测设计质量。
+#
+# 站：extract（提要点）-> summarize（写摘要）-> finish（收尾）
+# 门：gate_summary（机器判：字数和格式）、review（人判：验收）
+# 退回路：gate_summary 不合格 -> summarize；review 不合格 -> summarize（带理由）
+# 上限：summarize 最多做 3 次，超过就停线，不放行（见 tools/line_tools.py 的 MAX_ATTEMPTS）
+# 退场：对比做完就删掉整个 trials/toy-summary 目录。
+
+workflow:
+  name: toy-summary
+  description: 玩具样线，文章进摘要出
+  version: "0.1.0"
+  entry_point: extract
+
+  input:
+    item:
+      type: string
+      description: 这件活的文件夹，绝对路径
+    worker:
+      type: string
+      required: false
+      default: claude
+      description: 每站用哪家命令行工具当工人（claude、codex，或测试用的 stub）
+
+  limits:
+    max_iterations: 30
+    timeout_seconds: 1800
+
+agents:
+  - name: extract
+    type: script
+    description: 提要点（00-input.md -> 10-points.md）
+    command: python
+    args:
+      - "{{ workflow.dir }}/tools/line_tools.py"
+      - station
+      - --station=extract
+      - "--spec={{ workflow.dir }}/stations/extract.md"
+      - "--item={{ workflow.input.item }}"
+      - --input=00-input.md
+      - --output=10-points.md
+      - "--worker={{ workflow.input.worker }}"
+    env: { PYTHONUTF8: "1" }
+    timeout: 600
+    routes:
+      - to: summarize
+        when: "exit_code == 0"
+      - to: stop_line
+
+  - name: summarize
+    type: script
+    description: 写摘要（10-points.md -> 20-summary.md）
+    command: python
+    args:
+      - "{{ workflow.dir }}/tools/line_tools.py"
+      - station
+      - --station=summarize
+      - "--spec={{ workflow.dir }}/stations/summarize.md"
+      - "--item={{ workflow.input.item }}"
+      - --input=10-points.md
+      - --output=20-summary.md
+      - --feedback=20-summary.reject.md
+      - "--worker={{ workflow.input.worker }}"
+    env: { PYTHONUTF8: "1" }
+    timeout: 600
+    routes:
+      - to: gate_summary
+        when: "exit_code == 0"
+      - to: stop_line
+
+  - name: gate_summary
+    type: script
+    description: 机器门：60 到 120 字、一段、无开场白
+    command: python
+    args:
+      - "{{ workflow.dir }}/tools/line_tools.py"
+      - gate
+      - "--item={{ workflow.input.item }}"
+    env: { PYTHONUTF8: "1" }
+    timeout: 60
+    routes:
+      - to: review
+        when: "exit_code == 0"
+      - to: summarize
+        when: "exit_code == 1"
+      - to: stop_line
+
+  - name: review
+    type: human_gate
+    prompt: |
+      摘要已通过机器检查，请验收。
+
+      文件：{{ workflow.input.item }}/20-summary.md
+    options:
+      - label: 合格，出货
+        value: approve
+        route: finish
+      - label: 不合格，退回重写
+        value: reject
+        route: record_reject
+        prompt_for: reason
+
+  - name: record_reject
+    type: script
+    description: 把人工退回的理由写进文件，再退回 summarize
+    command: python
+    args:
+      - "{{ workflow.dir }}/tools/line_tools.py"
+      - mark
+      - "--item={{ workflow.input.item }}"
+      - --station=review
+      - --state=rejected
+      - "--note={{ review.output.additional_input.reason | default('未写理由') }}"
+      - --feedback-to=20-summary.reject.md
+    env: { PYTHONUTF8: "1" }
+    timeout: 60
+    routes:
+      - to: summarize
+        when: "exit_code == 0"
+      - to: stop_line
+
+  - name: finish
+    type: script
+    description: 收尾：记下已出货
+    command: python
+    args:
+      - "{{ workflow.dir }}/tools/line_tools.py"
+      - mark
+      - "--item={{ workflow.input.item }}"
+      - --station=finish
+      - --state=done
+    env: { PYTHONUTF8: "1" }
+    timeout: 60
+    routes:
+      - to: $end
+
+  - name: stop_line
+    type: terminate
+    status: failed
+    reason: "停线：有一站失败或退回次数超过上限，详情见这件活的 status.json"
+
+output:
+  item: "{{ workflow.input.item }}"

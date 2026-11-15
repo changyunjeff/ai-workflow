@@ -1,0 +1,76 @@
+{
+  "attempts": {
+    "extract": 1,
+    "summarize": 3
+  },
+  "history": [
+    {
+      "at": "2026-11-14 22:19:31",
+      "station": "extract",
+      "state": "running",
+      "note": ""
+    },
+    {
+      "at": "2026-11-14 22:19:31",
+      "station": "extract",
+      "state": "produced",
+      "note": "stub, 0.1s, 123 chars"
+    },
+    {
+      "at": "2026-11-14 22:19:31",
+      "station": "summarize",
+      "state": "running",
+      "note": ""
+    },
+    {
+      "at": "2026-11-14 22:19:32",
+      "station": "summarize",
+      "state": "produced",
+      "note": "stub, 0.1s, 13 chars"
+    },
+    {
+      "at": "2026-11-14 22:19:32",
+      "station": "gate_summary",
+      "state": "rejected",
+      "note": "字数应在 60 到 120 之间，现在是 13; （测试开关）强制判不合格"
+    },
+    {
+      "at": "2026-11-14 22:19:32",
+      "station": "summarize",
+      "state": "running",
+      "note": ""
+    },
+    {
+      "at": "2026-11-14 22:19:32",
+      "station": "summarize",
+      "state": "produced",
+      "note": "stub, 0.1s, 102 chars"
+    },
+    {
+      "at": "2026-11-14 22:19:32",
+      "station": "gate_summary",
+      "state": "rejected",
+      "note": "（测试开关）强制判不合格"
+    },
+    {
+      "at": "2026-11-14 22:19:32",
+      "station": "summarize",
+      "state": "running",
+      "note": ""
+    },
+    {
+      "at": "2026-11-14 22:19:32",
+      "station": "summarize",
+      "state": "produced",
+      "note": "stub, 0.1s, 102 chars"
+    },
+    {
+      "at": "2026-11-14 22:19:32",
+      "station": "gate_summary",
+      "state": "stopped",
+      "note": "3 attempts, still failing: ['（测试开关）强制判不合格']"
+    }
+  ],
+  "station": "gate_summary",
+  "state": "stopped"
+}

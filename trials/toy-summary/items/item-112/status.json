@@ -1,0 +1,64 @@
+{
+  "attempts": {
+    "extract": 1,
+    "summarize": 2
+  },
+  "history": [
+    {
+      "at": "2026-11-14 22:29:20",
+      "station": "extract",
+      "state": "running",
+      "note": ""
+    },
+    {
+      "at": "2026-11-14 22:29:23",
+      "station": "extract",
+      "state": "produced",
+      "note": "claude, 2.8s, 166 chars"
+    },
+    {
+      "at": "2026-11-14 22:29:23",
+      "station": "summarize",
+      "state": "running",
+      "note": ""
+    },
+    {
+      "at": "2026-11-14 22:29:25",
+      "station": "summarize",
+      "state": "produced",
+      "note": "claude, 2.4s, 123 chars"
+    },
+    {
+      "at": "2026-11-14 22:29:26",
+      "station": "gate_summary",
+      "state": "rejected",
+      "note": "字数应在 60 到 120 之间，现在是 123，超出 3 字。请删掉次要细节，压缩到 3 句话以内，大约是现在篇幅的 73%"
+    },
+    {
+      "at": "2026-11-14 22:29:26",
+      "station": "summarize",
+      "state": "running",
+      "note": ""
+    },
+    {
+      "at": "2026-11-14 22:29:31",
+      "station": "summarize",
+      "state": "produced",
+      "note": "claude, 5.0s, 97 chars"
+    },
+    {
+      "at": "2026-11-14 22:29:31",
+      "station": "gate_summary",
+      "state": "passed",
+      "note": "97 chars"
+    },
+    {
+      "at": "2026-11-14 22:29:31",
+      "station": "finish",
+      "state": "done",
+      "note": ""
+    }
+  ],
+  "station": "finish",
+  "state": "done"
+}

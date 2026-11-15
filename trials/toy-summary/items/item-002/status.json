@@ -1,0 +1,64 @@
+{
+  "attempts": {
+    "extract": 1,
+    "summarize": 2
+  },
+  "history": [
+    {
+      "at": "2026-11-14 22:19:25",
+      "station": "extract",
+      "state": "running",
+      "note": ""
+    },
+    {
+      "at": "2026-11-14 22:19:25",
+      "station": "extract",
+      "state": "produced",
+      "note": "stub, 0.1s, 123 chars"
+    },
+    {
+      "at": "2026-11-14 22:19:25",
+      "station": "summarize",
+      "state": "running",
+      "note": ""
+    },
+    {
+      "at": "2026-11-14 22:19:25",
+      "station": "summarize",
+      "state": "produced",
+      "note": "stub, 0.1s, 13 chars"
+    },
+    {
+      "at": "2026-11-14 22:19:25",
+      "station": "gate_summary",
+      "state": "rejected",
+      "note": "字数应在 60 到 120 之间，现在是 13"
+    },
+    {
+      "at": "2026-11-14 22:19:25",
+      "station": "summarize",
+      "state": "running",
+      "note": ""
+    },
+    {
+      "at": "2026-11-14 22:19:26",
+      "station": "summarize",
+      "state": "produced",
+      "note": "stub, 0.1s, 102 chars"
+    },
+    {
+      "at": "2026-11-14 22:19:26",
+      "station": "gate_summary",
+      "state": "passed",
+      "note": "102 chars"
+    },
+    {
+      "at": "2026-11-14 22:19:26",
+      "station": "finish",
+      "state": "done",
+      "note": ""
+    }
+  ],
+  "station": "finish",
+  "state": "done"
+}

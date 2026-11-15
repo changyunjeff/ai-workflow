@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>产线画布示意稿</title>
+<style>
+:root {
+  --bg:#f5f6f8; --card:#fff; --line:#d5dae1; --text:#1c2430; --muted:#667085;
+  --green:#1a8f4c; --green-bg:#e6f5ec; --amber:#b86e00; --amber-bg:#fff3d6;
+  --red:#b8382b; --red-bg:#fdebe8; --blue:#2458d6; --blue-bg:#e9effc;
+}
+* { box-sizing:border-box; }
+body { margin:0; font:14px/1.55 "Microsoft YaHei","PingFang SC",system-ui,sans-serif; color:var(--text); background:var(--bg); }
+button, textarea, input { font:inherit; color:inherit; }
+.demo { background:#333a45; color:#fff; padding:6px 16px; font-size:13px; }
+header { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; padding:10px 16px; background:var(--card); border-bottom:1px solid var(--line); }
+header h1 { font-size:16px; margin:0; }
+.spacer { flex:1; }
+.badge { padding:2px 10px; border-radius:99px; font-size:12.5px; font-weight:600; }
+.badge.draft { background:var(--amber-bg); color:var(--amber); } .badge.okd { background:var(--green-bg); color:var(--green); }
+.evid { font-size:12.5px; color:var(--muted); }
+.btn { padding:6px 12px; border:1px solid var(--line); border-radius:6px; background:#fff; cursor:pointer; }
+.btn:hover:not(:disabled) { border-color:#9aa4b2; }
+.btn:disabled { opacity:.45; cursor:not-allowed; }
+.btn.primary { background:var(--blue); border-color:var(--blue); color:#fff; }
+.btn.ok { background:var(--green); border-color:var(--green); color:#fff; }
+.btn.bad { border-color:var(--red); color:var(--red); }
+.strip { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:10px 16px 0; }
+.chip { padding:4px 11px; border-radius:99px; font-size:12.5px; border:1.5px solid transparent; background:#e9ecf1; color:var(--muted); cursor:pointer; }
+.chip.run { background:var(--blue-bg); color:var(--blue); } .chip.wait { background:var(--amber-bg); color:var(--amber); }
+.chip.bad { background:var(--red-bg); color:var(--red); } .chip.ok { background:var(--green-bg); color:var(--green); }
+.chip.cur { border-color:currentColor; font-weight:600; }
+.ask { display:flex; gap:8px; margin:10px 16px 0; padding:8px 10px; align-items:center; flex-wrap:wrap; }
+.ask input { flex:1; min-width:220px; border:1px solid var(--line); border-radius:6px; padding:6px 9px; }
+main { display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:12px; padding:10px 16px 16px; align-items:start; }
+@media (max-width: 900px) { main { grid-template-columns:minmax(0,1fr); } }
+.card { background:var(--card); border:1px solid var(--line); border-radius:10px; }
+#canvas { overflow:auto; height:420px; position:relative; }
+#stage { position:relative; width:100%; min-width:850px; height:400px; }
+#edges { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.edge { fill:none; stroke:#aab2be; stroke-width:1.6; }
+.edge.walked { stroke:var(--green); stroke-width:2.2; }
+.edge.back { stroke-dasharray:6 5; stroke:#c9a368; } .edge.back.walked { stroke:var(--amber); }
+.edge.stop { stroke-dasharray:3 4; stroke:#d0a9a4; } .edge.stop.walked { stroke:var(--red); }
+.elabel { font-size:11.5px; fill:var(--muted); text-anchor:middle; paint-order:stroke; stroke:#fff; stroke-width:5px; stroke-linejoin:round; }
+.elabel.hot { fill:var(--amber); font-weight:600; } .elabel.hotred { fill:var(--red); font-weight:600; }
+.node { position:absolute; height:62px; padding:6px 8px; border:1.5px solid var(--line); border-radius:9px; background:#fff; cursor:grab; user-select:none; touch-action:none; }
+.node:active { cursor:grabbing; }
+.node .kind { font-size:11px; color:var(--muted); }
+.node .title { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.node .st { font-size:11.5px; color:var(--muted); white-space:nowrap; }
+.node.file { border-style:dashed; background:#fafbfc; }
+.node.mgate, .node.hgate { border-radius:24px; padding-left:12px; }
+.node.ok { border-color:var(--green); background:var(--green-bg); } .node.ok .st { color:var(--green); }
+.node.run { border-color:var(--blue); background:var(--blue-bg); } .node.run .st { color:var(--blue); font-weight:600; }
+.node.wait { border-color:var(--amber); background:var(--amber-bg); } .node.wait .st { color:var(--amber); font-weight:600; }
+.node.bad { border-color:var(--red); background:var(--red-bg); } .node.bad .st { color:var(--red); font-weight:600; }
+.node.sel { outline:3px solid var(--blue); outline-offset:2px; }
+.pin { position:absolute; top:-11px; left:8px; background:#1c2430; color:#fff; font-size:10.5px; padding:0 7px; border-radius:99px; white-space:nowrap; }
+.nogate { position:absolute; bottom:-10px; right:6px; background:var(--amber-bg); color:var(--amber); border:1px solid #f0d9a8; font-size:10.5px; padding:0 6px; border-radius:99px; }
+.legend { display:flex; flex-wrap:wrap; gap:4px 14px; padding:8px 12px; border-top:1px solid #eef0f3; font-size:12.5px; color:var(--muted); align-items:center; }
+.sw { display:inline-block; width:22px; height:13px; border:1.5px solid var(--line); border-radius:4px; background:#fff; vertical-align:-2px; margin-right:4px; }
+#log { margin-top:12px; padding:10px 14px; }
+#log h2 { font-size:14px; margin:0 0 6px; }
+#log table { border-collapse:collapse; width:100%; font-size:13px; }
+#log td { padding:3px 10px 3px 0; vertical-align:top; border-top:1px solid #eef0f3; }
+#log td:first-child { color:var(--muted); white-space:nowrap; }
+#panel { padding:12px 14px; }
+#panel h2 { font-size:16px; margin:0 0 8px; }
+.tag { display:inline-block; font-size:12px; padding:1px 8px; border-radius:99px; background:#eef0f3; color:var(--muted); margin-left:6px; vertical-align:2px; font-weight:400; }
+.tabs { display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:4px; }
+.tabs button { border:0; background:none; padding:6px 10px; cursor:pointer; color:var(--muted); border-bottom:2.5px solid transparent; margin-bottom:-1px; }
+.tabs button.on { color:var(--blue); border-color:var(--blue); font-weight:600; }
+.scope { font-size:12.5px; color:var(--muted); margin:6px 0 2px; }
+section { border-top:1px solid #eef0f3; padding:9px 0 4px; }
+section:first-of-type { border-top:0; }
+section h3 { font-size:13px; margin:0 0 5px; color:var(--blue); }
+dl { margin:0; display:grid; grid-template-columns:70px 1fr; gap:4px 8px; }
+dt { color:var(--muted); } dd { margin:0; }
+ul { margin:0; padding-left:18px; }
+.box { background:#f7f8fa; border:1px solid #e6e9ee; border-radius:6px; padding:7px 9px; white-space:pre-wrap; font-size:13px; margin:5px 0; }
+.box.warn { background:var(--amber-bg); border-color:#f0d9a8; }
+details { margin:4px 0; } summary { cursor:pointer; }
+textarea, input[type=number] { width:100%; border:1px solid var(--line); border-radius:6px; padding:6px 8px; background:#fff; }
+textarea { min-height:68px; resize:vertical; }
+input[type=number] { width:66px; }
+.row { display:flex; gap:8px; flex-wrap:wrap; margin:6px 0; align-items:center; }
+.hint { color:var(--muted); font-size:12.5px; margin:3px 0; }
+.danger { margin-top:10px; padding-top:8px; border-top:1px dashed #e3b8b2; }
+.link { color:var(--blue); background:none; border:0; padding:0; cursor:pointer; text-decoration:underline; }
+#toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:#1c2430; color:#fff; padding:9px 16px; border-radius:8px; max-width:min(92vw,600px); opacity:0; pointer-events:none; transition:opacity .2s; }
+#toast.on { opacity:.96; }
+[hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<div class="demo">这是示意稿（第 2 版）：节点能拖、能点，但按钮不会真的执行，只提示正式版里会发生什么。数据取自玩具样线的真实试跑。</div>
+<header>
+  <h1>文章摘要线</h1>
+  <span id="lineState"></span>
+  <span class="spacer"></span>
+  <button class="btn" id="about">这条线的说明</button>
+  <button class="btn primary" id="feed">投新料</button>
+</header>
+<div class="strip"><span>看哪件活：</span><span id="chips"></span><span class="hint">（共 4 件。活多了以后这里会变成一张可筛选的清单）</span></div>
+<div class="card ask">
+  <span>对整条线有意见？</span>
+  <input id="askbox" placeholder="直接说，比如：在写摘要前面加一站，先核对事实">
+  <button class="btn primary" data-say="AI 会先告诉你它打算动哪几处；你点头后它才改；改完用你给的样例试跑，把改了什么和试跑结果给你看；你再点头，新版才替换现在的版本。">交给 AI</button>
+</div>
+<main>
+  <div>
+    <div class="card">
+      <div id="canvas"><div id="stage"><svg id="edges"></svg></div></div>
+      <div class="legend">
+        <span><i class="sw"></i>站：干一步活</span><span><i class="sw" style="border-radius:8px"></i>门：检查上一步的产出</span>
+        <span><i class="sw" style="border-style:dashed"></i>原料 / 成品</span>
+        <span><i class="sw" style="background:var(--green-bg);border-color:var(--green)"></i>做完或合格</span>
+        <span><i class="sw" style="background:var(--blue-bg);border-color:var(--blue)"></i>正在做</span>
+        <span><i class="sw" style="background:var(--amber-bg);border-color:var(--amber)"></i>等你</span>
+        <span><i class="sw" style="background:var(--red-bg);border-color:var(--red)"></i>出问题</span>
+        <span>实线往前走，虚线是退回。按住节点可拖动摆放，位置会记住。</span>
+        <button class="link" id="tidy">恢复默认摆放</button>
+      </div>
+    </div>
+    <div class="card" id="log"></div>
+  </div>
+  <aside class="card" id="panel"></aside>
+</main>
+<div id="toast"></div>
+<script>
+const H = 62, wOf = n => n.kind === 'file' ? 84 : 108;
+const NODES = [
+  { id:'in', kind:'file', kindName:'原料', title:'一篇文章', file:'00-input.md', x:14, y:150 },
+  { id:'extract', kind:'station', kindName:'站', title:'提要点', input:'00-input.md', output:'10-points.md', nogate:true, x:136, y:150 },
+  { id:'summarize', kind:'station', kindName:'站', title:'写摘要', input:'10-points.md', output:'20-summary.md', x:286, y:150 },
+  { id:'gate', kind:'mgate', kindName:'门 · 机器判', title:'字数和格式', x:436, y:150 },
+  { id:'review', kind:'hgate', kindName:'门 · 你来判', title:'验收', x:586, y:150 },
+  { id:'out', kind:'file', kindName:'成品', title:'一段摘要', file:'20-summary.md', x:736, y:150 },
+  { id:'stop', kind:'stop', kindName:'停线', title:'停下等你处理', x:476, y:318 },
+];
+const HOME = Object.fromEntries(NODES.map(n => [n.id, [n.x, n.y]]));
+const N = Object.fromEntries(NODES.map(n => [n.id, n]));
+const EDGES = [
+  { from:'in', to:'extract' }, { from:'extract', to:'summarize' }, { from:'summarize', to:'gate' },
+  { from:'gate', to:'review', label:'合格' }, { from:'review', to:'out', label:'合格' },
+  { from:'gate', to:'summarize', type:'below', label:'不合格，退回重写' },
+  { from:'review', to:'summarize', type:'above', label:'不合格，带理由退回' },
+  { from:'gate', to:'stop', type:'down', label:'写了 3 次仍不合格' },
+];
+const SPEC = {
+  extract: '从输入的文章里提取 3 到 5 条要点。\n每条一行，每条不超过 40 个字。\n只写文章里有的内容，不加自己的看法。',
+  summarize: '根据要点写一段中文摘要。\n最多 3 句话，只有一段，不用标题和列表，宁短勿长。\n如果是被退回重写，按退回理由修改。',
+};
+const ARTICLE = '老城区的一栋六层居民楼，三年前把闲置的楼顶改成了菜园。最初只有顶楼的两户人家参与……（全文约 480 字，正式版里可展开看全文）';
+const POINTS = '- 屋顶菜园三年前由顶楼两户起步\n- 第一年雨季排水口堵塞，积水渗进六楼天花板\n- 第二年重做防水、定下三条规矩，参与户数增至十一户\n- 第三年成为公共客厅，顶楼夏季室温低两到三度\n- 冬天少人打理，搬走住户的箱子无人接手';
+const S97 = '屋顶菜园三年前由两户起步，首年因排水堵塞差点被拆；第二年重做防水、加架空托盘并定下三条规矩，参与户数增至十一户。菜园成了公共客厅，顶楼两户夏季室温低两到三度。两户搬走后，他们的箱子至今无人接手。';
+const S110 = '屋顶菜园由顶楼两户三年前发起，第一年因排水堵塞渗水，第二年重做防水并定下每户四箱等规矩，参与户数增至十一户。第三年它成为楼里公共客厅，夏季顶楼室内比邻楼低两到三度。两户搬走后，他们的箱子至今无人接手，冬天也几乎无人照看。';
+const OLD = '（这一次的原文。正式版里每一次写的东西都留着，可以展开看全文。）';
+const ITEMS = {
+  d: { name:'第 16 件', state:'run', stateName:'正在做', at:'summarize',
+    st:{ in:'done', extract:'done', summarize:'run' }, walked:['in>extract','extract>summarize'], back:{},
+    tries:[], judged:{},
+    log:[['22:41:02','提要点','做完','用了 2.9 秒'],['22:41:05','写摘要','正在做','已经 40 秒（平时 3 秒左右，超过 5 分钟会判为卡住并停线）']] },
+  a: { name:'第 12 件', state:'wait', stateName:'等你验收', at:'review',
+    st:{ in:'done', extract:'done', summarize:'done', gate:'pass', review:'wait' },
+    walked:['in>extract','extract>summarize','summarize>gate','gate>summarize','gate>review'], back:{ 'gate>summarize':1 },
+    tries:[{ n:1, chars:123, verdict:'不合格：超出 3 字', text:OLD }, { n:2, chars:97, verdict:'合格', text:S97 }],
+    judged:{ gate:['第 1 次：不合格（123 字，超出 3 字）。退回时告诉它：删掉次要细节，压到 3 句话以内。', '第 2 次：合格（97 字）'] },
+    log:[['22:29:41','提要点','做完','用了 2.8 秒'],['22:29:44','写摘要','做完','第 1 次，123 字'],['22:29:44','字数和格式','不合格，退回','超出 3 字'],['22:29:47','写摘要','做完','第 2 次，97 字'],['22:29:47','字数和格式','合格','97 字'],['22:29:47','验收','等你验收','']] },
+  b: { name:'第 3 件', state:'bad', stateName:'停线', at:'stop',
+    st:{ in:'done', extract:'done', summarize:'done', gate:'fail', stop:'stopped' },
+    walked:['in>extract','extract>summarize','summarize>gate','gate>summarize','gate>stop'], back:{ 'gate>summarize':2 },
+    tries:[{ n:1, chars:166, verdict:'不合格：超出 46 字', text:OLD }, { n:2, chars:180, verdict:'不合格：超出 60 字', text:OLD },
+           { n:3, chars:167, verdict:'不合格：超出 47 字，停线', text:'屋顶菜园三年前由两户人家用旧泡沫箱起步，第一年雨季排水口堵塞，积水渗进六楼天花板，险些被拆掉。居民凑钱重做防水、加架空托盘并定下三条规矩，参与户数从两户增至十一户。第三年菜园成了公共客厅……（共 167 字）' }],
+    judged:{ gate:['第 1 次：不合格（166 字）', '第 2 次：不合格（180 字）', '第 3 次：不合格（167 字）。已到上限，停线。'] },
+    log:[['22:28:02','提要点','做完','用了 2.9 秒'],['22:28:05','写摘要','做完','第 1 次，166 字'],['22:28:05','字数和格式','不合格，退回','超出 46 字'],['22:28:08','写摘要','做完','第 2 次，180 字'],['22:28:08','字数和格式','不合格，退回','超出 60 字'],['22:28:11','写摘要','做完','第 3 次，167 字'],['22:28:11','字数和格式','停线','3 次都不合格，没有放到后面去']] },
+  c: { name:'第 15 件', state:'ok', stateName:'已出货', at:'out',
+    st:{ in:'done', extract:'done', summarize:'done', gate:'pass', review:'pass', out:'done' },
+    walked:['in>extract','extract>summarize','summarize>gate','gate>review','review>out'], back:{},
+    tries:[{ n:1, chars:110, verdict:'合格', text:S110 }], judged:{ gate:['第 1 次：合格（110 字）'], review:['22:30:40 你判了合格'] },
+    log:[['22:30:10','提要点','做完','用了 2.8 秒'],['22:30:13','写摘要','做完','第 1 次，110 字'],['22:30:13','字数和格式','合格','110 字'],['22:30:40','验收','合格','你点了"合格，出货"'],['22:30:40','成品','已出货','20-summary.md']] },
+};
+const ST = { done:['做完','ok'], pass:['合格','ok'], run:['正在做','run'], wait:['等你验收','wait'], fail:['不合格','bad'], stopped:['停在这里','bad'], idle:['没轮到',''] };
+let cur = 'a', sel = 'review', tab = 'item', approved = false, dirty = false;
+const $ = s => document.querySelector(s), stage = $('#stage'), svg = $('#edges');
+const it = () => ITEMS[cur], stOf = id => it().st[id] || 'idle';
+const folder = () => `这件活的文件夹（items\\${it().name}）`;
+
+function toast(msg, raw) { const t = $('#toast'); t.textContent = raw ? msg : '示意稿：正式版里，' + msg; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 4200); }
+function leaveOk() { if (dirty && !confirm('刚才改的还没保存，离开会丢。要离开吗？')) return false; dirty = false; return true; }
+
+function path(e) {
+  const a = N[e.from], b = N[e.to], wa = wOf(a), wb = wOf(b); let p0, p1, p2, p3, d;
+  if (e.type === 'below') { p0 = [a.x + wa * .25, a.y + H]; p3 = [b.x + wb / 2, b.y + H]; d = Math.max(60, Math.abs(p0[0] - p3[0]) * .4); p1 = [p0[0], p0[1] + d]; p2 = [p3[0], p3[1] + d]; }
+  else if (e.type === 'above') { p0 = [a.x + wa / 2, a.y]; p3 = [b.x + wb / 2, b.y]; d = Math.max(60, Math.abs(p0[0] - p3[0]) * .32); p1 = [p0[0], p0[1] - d]; p2 = [p3[0], p3[1] - d]; }
+  else if (e.type === 'down') { p0 = [a.x + wa * .8, a.y + H]; p3 = [b.x + wb / 2, b.y]; d = Math.max(26, Math.abs(p3[1] - p0[1]) / 2); p1 = [p0[0], p0[1] + d]; p2 = [p3[0], p3[1] - d]; }
+  else { p0 = [a.x + wa, a.y + H / 2]; p3 = [b.x, b.y + H / 2]; d = Math.max(22, Math.abs(p3[0] - p0[0]) / 2); p1 = [p0[0] + d, p0[1]]; p2 = [p3[0] - d, p3[1]]; }
+  return { d:`M${p0} C${p1} ${p2} ${p3}`, mid:[(p0[0] + 3 * p1[0] + 3 * p2[0] + p3[0]) / 8, (p0[1] + 3 * p1[1] + 3 * p2[1] + p3[1]) / 8] };
+}
+function drawEdges() {
+  let h = '<defs>' + [['g','#aab2be'],['w','#1a8f4c'],['b','#b86e00'],['r','#b8382b']].map(([k, c]) =>
+    `<marker id="m${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`).join('') + '</defs>';
+  for (const e of EDGES) {
+    const key = e.from + '>' + e.to, walked = it().walked.includes(key), p = path(e), n = it().back[key];
+    const cls = 'edge' + (e.type === 'below' || e.type === 'above' ? ' back' : e.type === 'down' ? ' stop' : '') + (walked ? ' walked' : '');
+    h += `<path class="${cls}" d="${p.d}" marker-end="url(#${!walked ? 'mg' : e.type === 'down' ? 'mr' : e.type ? 'mb' : 'mw'})"/>`;
+    if (e.label) {
+      const hot = walked && e.type === 'down' ? ' hotred' : n ? ' hot' : '';
+      const dx = e.type === 'down' ? 10 : 0, dy = e.type === 'below' ? 16 : e.type === 'down' ? 4 : -7;
+      h += `<text class="elabel${hot}" ${dx ? 'style="text-anchor:start"' : ''} x="${p.mid[0] + dx}" y="${p.mid[1] + dy}">${e.label}${n ? ` · 这件活已退回 ${n} 次` : ''}</text>`;
+    }
+  }
+  svg.innerHTML = h;
+}
+function drawNodes() {
+  stage.querySelectorAll('.node').forEach(n => n.remove());
+  for (const n of NODES) {
+    const el = document.createElement('div'), [txt, cls] = ST[stOf(n.id)];
+    el.className = `node ${n.kind} ${cls}` + (sel === n.id ? ' sel' : '');
+    el.style.cssText = `left:${n.x}px;top:${n.y}px;width:${wOf(n)}px`; el.dataset.id = n.id;
+    el.innerHTML = `<div class="kind">${n.kindName}</div><div class="title">${n.title}</div><div class="st">${txt}</div>`
+      + (it().at === n.id ? '<span class="pin">这件活在这里</span>' : '') + (n.nogate ? '<span class="nogate">还没有门</span>' : '');
+    let sx, sy, ox, oy, moved;
+    el.onpointerdown = ev => { sx = ev.clientX; sy = ev.clientY; ox = n.x; oy = n.y; moved = false; el.setPointerCapture(ev.pointerId); };
+    el.onpointermove = ev => {
+      if (sx === undefined || !el.hasPointerCapture(ev.pointerId)) return;
+      const dx = ev.clientX - sx, dy = ev.clientY - sy;
+      if (!moved && Math.hypot(dx, dy) < 4) return;
+      moved = true; n.x = Math.max(0, Math.min(stage.clientWidth - wOf(n), ox + dx)); n.y = Math.max(12, Math.min(stage.clientHeight - H - 12, oy + dy));
+      el.style.left = n.x + 'px'; el.style.top = n.y + 'px'; drawEdges();
+    };
+    el.onpointerup = ev => { el.releasePointerCapture(ev.pointerId); sx = undefined; if (!moved) select(n.id); };
+    stage.appendChild(el);
+  }
+}
+function drawHead() {
+  $('#lineState').innerHTML = approved
+    ? '<span class="badge okd">你已批准 · 第 2 版</span> <span class="evid">批准于今天 22:45。<button class="link" data-act="unapprove">撤回批准</button></span>'
+    : '<span class="badge draft">草稿 · 还没批准</span> <span class="evid">AI 已用你给的样例试跑 5 次，5 次都出货。</span> <button class="btn ok" data-act="approve">批准这条线</button>';
+  $('#chips').innerHTML = Object.entries(ITEMS).map(([k, v]) => `<button class="chip ${v.state}${k === cur ? ' cur' : ''}" data-item="${k}">${v.name} · ${v.stateName}</button>`).join(' ');
+  document.querySelectorAll('[data-item]').forEach(b => b.onclick = () => { if (!leaveOk()) return; cur = b.dataset.item; sel = it().at; tab = 'item'; render(); });
+  bind(document.querySelector('header'));
+}
+function drawLog() {
+  $('#log').innerHTML = `<h2>${it().name}的经过</h2><table>${it().log.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('')}</table>`;
+}
+const list = a => a && a.length ? `<ul>${a.map(x => `<li>${x}</li>`).join('')}</ul>` : '<span class="hint">还没有</span>';
+const openBtn = name => `<button class="link" data-say="会用你电脑上的默认程序打开这个文件。">打开 ${name}</button> <span class="hint">在${folder()}里</span>`;
+const aiBox = what => `<section><h3>让 AI 改</h3><textarea placeholder="用一句话说哪里不对。比如：摘要太书面，写得口语一点"></textarea>
+  <div class="row"><button class="btn primary" data-say="AI 会带着你的意见改${what}，改完用你给的样例试跑，把改了什么和试跑结果给你看。你点头，新版才替换现在的版本；你不点头，什么都不变。">交给 AI 改</button></div></section>`;
+const ver = t => `<p class="hint">${t}</p>`;
+const saveRow = extra => `<div class="row"><button class="btn" data-say="会保存成新的一版。${extra}随时可以退回上一版。">保存</button>
+  <button class="btn" data-say="会保存成新的一版，并马上用你给的样例跑一遍，告诉你新版能不能出货。没跑通也不会丢，你可以退回上一版。">保存并试跑</button></div>
+  <p class="hint">保存后：还没走到这一步的活按新版做；已经过了这一步的不受影响。</p>`;
+
+function panelLine() {
+  return `<h2>这条线的说明</h2>
+  <section><dl><dt>原料</dt><dd>一篇中文文章</dd><dt>成品</dt><dd>一段 60 到 120 字的摘要</dd>
+    <dt>怎么走</dt><dd>提要点 → 写摘要 → 机器查字数和格式 → 你验收 → 成品</dd>
+    <dt>什么时候拆</dt><dd>这是试验用的玩具线，试验做完就整条删掉</dd></dl></section>
+  <section><h3>几个词</h3><dl><dt>站</dt><dd>干一步活。每站由一个 AI 工人照着"规格"干。</dd><dt>规格</dt><dd>写给工人看的说明：这一步要做什么、做成什么样。</dd>
+    <dt>门</dt><dd>检查上一步的产出。机器判的门由程序自动查；你来判的门等你点头。</dd>
+    <dt>退回</dt><dd>门判不合格，把活送回前面的站重做，并告诉它哪里不对。</dd>
+    <dt>停线</dt><dd>重做到上限还不合格，这件活停下等你处理。不合格的东西不会流到后面。</dd></dl></section>`;
+}
+function tabItem(n, s) {
+  const i = it(), done = i.state === 'ok', running = s === 'run';
+  if (n.kind === 'file') {
+    const has = n.id === 'in' || done;
+    return `<section><h3>${n.id === 'in' ? '投进来的原料' : '交出来的成品'}</h3>${has ? `<p>${openBtn(n.file)}</p><div class="box">${n.id === 'in' ? ARTICLE : i.tries.at(-1).text}</div>` : '<p class="hint">这件活还没出货，这里还没有成品。</p>'}
+      ${n.id === 'out' && done ? '<p class="hint">出货的意思：你验收过了，这份文件就是最终成品，放在上面那个文件夹里。它不会被自动发到别处。</p>' : ''}</section>`;
+  }
+  if (n.kind === 'station') {
+    const tries = n.id === 'summarize' ? i.tries : (s === 'done' ? [{ n:1, chars:POINTS.replace(/\s/g, '').length, verdict:'做完', text:POINTS }] : []);
+    const why = done ? '这件活已出货。想重做请重新投料，免得盖掉成品。' : running ? '这一步正在做，等它做完。' : s === 'idle' ? '这件活还没走到这一步。' : '';
+    return `<section><h3>这件活在这一步的产出</h3>${running ? '<div class="box">正在做，已经 40 秒。平时 3 秒左右；超过 5 分钟会判为卡住并停线。</div>' : ''}
+      ${tries.length ? tries.map((t, k) => `<details${k === tries.length - 1 ? ' open' : ''}><summary>第 ${t.n} 次 · ${t.chars} 字 · ${t.verdict}</summary><div class="box">${t.text}</div></details>`).join('') + `<p>${openBtn(n.output)}</p>` : (running ? '' : '<p class="hint">还没有产出。</p>')}</section>
+    <section><h3>重跑</h3><div class="row"><button class="btn" ${why ? 'disabled' : ''} data-say="只把这一步重做一遍，然后停下。旧的产出留着，记为上一次。">只重做这一步</button>
+      <button class="btn" ${why ? 'disabled' : ''} data-say="把这一步重做一遍，然后照常往后走，直到出货、等你验收或停线。旧的产出留着，记为上一次。">重做这一步并接着往后走</button></div>
+      <p class="hint">${why || '两个按钮都不会删掉旧的产出。'}</p></section>`;
+  }
+  if (n.kind === 'mgate') {
+    return `<section><h3>这件活的判定记录</h3>${list(i.judged.gate)}</section>
+    <section><h3>重跑</h3><div class="row"><button class="btn" ${i.judged.gate ? '' : 'disabled'} data-say="会按现在的标准，对这件活最新的摘要重新检查一次。">重新判一次</button></div>
+      <p class="hint">${i.judged.gate ? '改过标准之后想马上看结果，可以点这个。' : '这件活还没走到这道门。'}</p></section>`;
+  }
+  if (n.kind === 'hgate') {
+    if (s !== 'wait') return `<section><h3>这件活的判定记录</h3>${i.judged.review ? list(i.judged.review) : '<p class="hint">这件活现在不在等验收。</p>'}</section>`;
+    return `<section><h3>等你验收</h3><p class="hint">这段摘要已通过机器门（97 字）。验收要点：读着通顺、没有编造、你愿意直接拿去用。</p>
+      <div class="box warn">${i.tries.at(-1).text}</div>
+      <details><summary>对照原文和要点（查有没有编造）</summary><p class="hint">要点：</p><div class="box">${POINTS}</div><p class="hint">原文：</p><div class="box">${ARTICLE}</div></details>
+      <div class="row"><button class="btn ok" data-say="这件活记为已出货，成品就是这段摘要。点完 10 秒内可以撤销。">合格，出货</button>
+        <button class="btn bad" data-act="why">不合格……</button></div>
+      <div id="why" hidden><textarea id="whytext" placeholder="写一句理由（必填）。它会带着这句话退回「写摘要」重写"></textarea>
+        <div class="row"><button class="btn bad" data-act="reject">确认退回重写</button></div>
+        <p class="hint">这句理由只用在这一件活上。如果你希望以后每件都这样写，请到"写摘要"的"这一站的规矩"里改，或者在页面上方对整条线提意见。</p></div></section>`;
+  }
+  const here = s === 'stopped';
+  return `<section><h3>${here ? '这件活为什么停' : '停线'}</h3>${here ? `<div class="box warn">摘要连写 3 次都超字数（166、180、167 字），已到上限。不合格的摘要没有流到后面。</div>
+      <p class="hint">多半是"写摘要"的规格没写清楚。建议先点图上的"写摘要"，在"这一站的规矩"里改好（或让 AI 改），再回来点下面的按钮。</p>
+      <div class="row"><button class="btn" data-say="这件活会从「写摘要」重新开始，按现在最新的规格做，重写次数从头算。之前 3 次的产出都留着。">从"写摘要"接着跑</button></div>
+      <div class="danger"><button class="btn bad" data-say="会先问你一遍确认。确认后这件活记为放弃，不再处理。原料和已有的产出文件都保留，不会删。">放弃这件活</button> <span class="hint">文件保留，不删除</span></div>`
+    : '<p class="hint">这件活没有停线。</p>'}</section>`;
+}
+function tabRules(n) {
+  if (n.kind === 'file') return `<section><h3>${n.kindName}</h3><p>${n.id === 'in' ? '这条线收的原料是：一篇中文文章（一个文本文件）。' : '这条线交的成品是：一段 60 到 120 字的中文摘要（一个文本文件）。'}</p><p class="hint">想改原料或成品是什么，等于改整条线。请在页面上方对整条线提意见。</p></section>`;
+  if (n.kind === 'stop') return `<section><h3>停线是什么</h3><p>一件活重做到上限还不合格，或者某一步出错、卡住，就停在这里等你处理。不合格的东西不会流到后面。</p><p class="hint">上限是多少，在各道门的规矩里改。</p></section>`;
+  if (n.kind === 'station') {
+    const v = n.id === 'summarize' ? '现在是第 2 版 · 今天 22:29 由 AI 改，你还没看过 · 改后试跑 5 件，5 件出货' : '现在是第 1 版 · 没改过';
+    return ver(v) + aiBox('这一步的规格') + `<section><h3>直接改规格</h3><p class="hint">规格是写给工人看的说明：这一步要做什么、做成什么样。</p><textarea>${SPEC[n.id]}</textarea>${saveRow('')}</section>
+    <section><h3>这一步的其他规矩</h3><dl><dt>谁干</dt><dd>AI 工人（Claude）。以后可以换成别家的 AI。</dd><dt>收什么</dt><dd>${n.input}</dd><dt>交什么</dt><dd>${n.output}</dd>
+      <dt>后面的门</dt><dd>${n.nogate ? '<span style="color:var(--amber)">还没有门。按你的标准每站都该有一道，可以在上面让 AI 补。</span>' : '"字数和格式"（机器判）和"验收"（你来判）。字数要求写在门上，这里不用重复写。'}</dd></dl></section>`;
+  }
+  if (n.kind === 'mgate') {
+    return ver('现在是第 2 版 · 今天 22:29 由 AI 改，你还没看过 · 改后试跑 5 件，5 件出货') + aiBox('这道门的标准') + `<section><h3>直接改标准</h3><dl><dt>谁来判</dt><dd>机器。程序自动查，不用 AI。</dd></dl>
+      <div class="row">字数最少 <input type="number" value="60"> 最多 <input type="number" value="120"></div>
+      <div class="row"><label><input type="checkbox" checked> 只有一段，不换行</label></div>
+      <div class="row"><label><input type="checkbox" checked> 没有开场白、标题、列表符号</label></div>
+      <div class="row">同一件活最多写 <input type="number" value="3"> 次，还不合格就停线</div>
+      ${saveRow('字数要求只存在这道门上，"写摘要"的工人会自动按新数字写，两处不会对不上。')}</section>
+    <section><h3>不合格怎么办</h3><p>退回"写摘要"，并告诉它超了多少字、该怎么删。</p><p class="hint">想改成退回到别的站：第一版请让 AI 改；第二版可以直接在图上拖线。</p></section>`;
+  }
+  return ver('现在是第 1 版 · 没改过') + aiBox('这道门的验收要点') + `<section><h3>直接改验收要点</h3><dl><dt>谁来判</dt><dd>你</dd></dl><p class="hint">写给自己看：验收时要看什么。下面这句是 AI 先替你拟的，等你定。</p>
+      <textarea>读着通顺、没有编造、愿意直接拿去用。</textarea>${saveRow('')}</section>
+    <section><h3>不合格怎么办</h3><p>退回"写摘要"，带上你写的理由。人工退回不限次数。</p></section>`;
+}
+function panel() {
+  const el = $('#panel');
+  if (!sel) { el.innerHTML = panelLine(); return bind(el); }
+  const n = N[sel], s = stOf(sel);
+  el.innerHTML = `<h2>${n.title}<span class="tag">${n.kindName}</span><span class="tag">${it().name}：${ST[s][0]}</span></h2>
+    <div class="tabs"><button data-tab="item" class="${tab === 'item' ? 'on' : ''}">这件活</button><button data-tab="rules" class="${tab === 'rules' ? 'on' : ''}">这一站的规矩</button></div>
+    <p class="scope">${tab === 'item' ? `下面的操作只影响${it().name}。` : '下面的改动影响以后所有的活。'}</p>` + (tab === 'item' ? tabItem(n, s) : tabRules(n));
+  el.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { if (!leaveOk()) return; tab = b.dataset.tab; panel(); });
+  bind(el);
+}
+function bind(el) {
+  el.querySelectorAll('[data-say]').forEach(b => b.onclick = () => { dirty = false; toast(b.dataset.say); });
+  el.querySelectorAll('[data-act]').forEach(b => b.onclick = () => {
+    const a = b.dataset.act;
+    if (a === 'approve') { approved = true; drawHead(); toast('已批准（示意）。正式版里，批准之后才能正式投料；以后每改一版都要你重新点头。', true); }
+    if (a === 'unapprove') { approved = false; drawHead(); }
+    if (a === 'why') { $('#why').hidden = false; $('#whytext').focus(); }
+    if (a === 'reject') { if (!$('#whytext').value.trim()) return toast('请先写一句理由，不然它不知道该怎么改。', true); dirty = false; toast('这件活会带着你的理由退回「写摘要」重写，写完再过机器门，然后回到这里等你。'); }
+  });
+}
+function select(id) { if (id !== sel && !leaveOk()) return; sel = id; document.querySelectorAll('.node').forEach(n => n.classList.toggle('sel', n.dataset.id === id)); panel(); }
+function render() { drawHead(); drawEdges(); drawNodes(); drawLog(); panel(); }
+
+$('#panel').addEventListener('input', () => dirty = true);
+$('#tidy').onclick = () => { NODES.forEach(n => [n.x, n.y] = HOME[n.id]); drawEdges(); drawNodes(); };
+$('#about').onclick = () => { if (!leaveOk()) return; sel = null; render(); };
+$('#feed').onclick = () => approved ? toast('会让你选一个文件或粘贴一段文字作为原料，先给你看一眼确认，你点"开始"才会跑。') : toast('这条线还是草稿。先点"批准这条线"，批准之后才能正式投料。', true);
+bind(document.querySelector('.ask'));
+$('#canvas').addEventListener('pointerdown', e => { if (e.target.id === 'stage' || e.target.id === 'canvas' || e.target.id === 'edges') { if (!leaveOk()) return; sel = null; render(); } });
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+{
+  "attempts": {
+    "extract": 1,
+    "summarize": 3
+  },
+  "history": [
+    {
+      "at": "2026-11-14 22:27:15",
+      "station": "extract",
+      "state": "running",
+      "note": ""
+    },
+    {
+      "at": "2026-11-14 22:27:18",
+      "station": "extract",
+      "state": "produced",
+      "note": "claude, 2.9s, 201 chars"
+    },
+    {
+      "at": "2026-11-14 22:27:18",
+      "station": "summarize",
+      "state": "running",
+      "note": ""
+    },
+    {
+      "at": "2026-11-14 22:27:21",
+      "station": "summarize",
+      "state": "produced",
+      "note": "claude, 2.7s, 166 chars"
+    },
+    {
+      "at": "2026-11-14 22:27:21",
+      "station": "gate_summary",
+      "state": "rejected",
+      "note": "字数应在 60 到 120 之间，现在是 166"
+    },
+    {
+      "at": "2026-11-14 22:27:21",
+      "station": "summarize",
+      "state": "running",
+      "note": ""
+    },
+    {
+      "at": "2026-11-14 22:27:24",
+      "station": "summarize",
+      "state": "produced",
+      "note": "claude, 2.8s, 180 chars"
+    },
+    {
+      "at": "2026-11-14 22:27:24",
+      "station": "gate_summary",
+      "state": "rejected",
+      "note": "字数应在 60 到 120 之间，现在是 180"
+    },
+    {
+      "at": "2026-11-14 22:27:24",
+      "station": "summarize",
+      "state": "running",
+      "note": ""
+    },
+    {
+      "at": "2026-11-14 22:27:26",
+      "station": "summarize",
+      "state": "produced",
+      "note": "claude, 2.7s, 167 chars"
+    },
+    {
+      "at": "2026-11-14 22:27:26",
+      "station": "gate_summary",
+      "state": "stopped",
+      "note": "3 attempts, still failing: ['字数应在 60 到 120 之间，现在是 167']"
+    }
+  ],
+  "station": "gate_summary",
+  "state": "stopped"
+}

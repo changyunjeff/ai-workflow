@@ -1,0 +1,125 @@
+{
+ "id": "urp-style-shader",
+ "name": "URP 风格着色器线",
+ "input": "一段话：游戏想要的画面风格，用在什么东西上，有什么限制（比如手机、要不要投影）",
+ "output": "一个能直接放进 Unity URP 工程的 .shader 文件",
+ "retire": "游戏不再用 URP，或者改由技术美术手写着色器的时候，整条线删掉",
+ "worker": "claude",
+ "model": "sonnet",
+ "judge_model": "sonnet",
+ "designer_model": "sonnet",
+ "version": 1,
+ "approved_version": null,
+ "approved_at": null,
+ "changed_by": "AI",
+ "changed_at": "2026-11-21 18:40",
+ "change_note": "AI 按“风格描述进、URP 着色器文件出”设计；第一轮试跑后补上 URP 主光/附加光的分法，放宽方案门",
+ "flow": [
+  "in",
+  "plan",
+  "plan-format",
+  "plan-check",
+  "shader",
+  "urp-check",
+  "shader-check",
+  "review",
+  "out"
+ ],
+ "nodes": [
+  {
+   "id": "in",
+   "kind": "source",
+   "title": "风格要求",
+   "file": "00-style.md"
+  },
+  {
+   "id": "plan",
+   "kind": "station",
+   "title": "定视觉方案",
+   "input": "00-style.md",
+   "output": "10-plan.md",
+   "timeout": 300,
+   "spec": "读游戏的风格要求，写一份给着色器程序员照着做的视觉方案。分五节，小标题照抄：\n## 用在哪：用在什么物体上；不透明还是半透明；要不要接收阴影、要不要投射阴影。\n## 画面效果：一条一个效果，编号。每条先说看起来是什么样，再写出能照着写代码的算法：用什么数据（法线、UV、世界坐标、观察方向、时间 _Time、在代码里算出来的噪声等），式子里的系数写成具体数字或某个参数。\n## 光照：受不受场景灯光；哪些灯算进来、怎么算；环境光多亮；要不要雾。注意 URP 的分法：只有一盏平行光（太阳、月光）是“主光”（GetMainLight）；手电筒、灯泡、火把这类聚光灯和点光都是“附加光”，要逐个取（GetAdditionalLightsCount、GetAdditionalLight），否则它们照不亮这个材质。\n## 可调参数：一行一个，格式「`_英文名` | 类型 | 默认值 | 作用」。类型只用 Float、Range(最小,最大)、Color、Vector、2D。贴图的默认值写 white 或 black 或 bump，不给贴图也要能出效果。默认值要直接就是这个风格的样子。参数的方向要顺：调大，对应的效果就变强（比如锈的多少，越大锈越多）。\n## 不做：风格要求里提到、但一个材质着色器做不到的东西（全屏后处理如泛光 Bloom、需要额外脚本的、需要别的贴图或模型的），说明为什么不做、该用 Unity 里的什么办法补上。没有就写“无”。\n整个效果必须能在一个 .shader 文件里做出来：不依赖额外脚本、后处理、自定义的 include 文件，不要求美术必须提供贴图。"
+  },
+  {
+   "id": "plan-format",
+   "kind": "gate",
+   "judge": "machine",
+   "title": "方案的五节都在",
+   "file": "10-plan.md",
+   "checks": {
+    "must_include": [
+     "## 用在哪",
+     "## 画面效果",
+     "## 光照",
+     "## 可调参数",
+     "## 不做"
+    ]
+   },
+   "on_fail": "plan",
+   "max_tries": 3
+  },
+  {
+   "id": "plan-check",
+   "kind": "gate",
+   "judge": "ai",
+   "title": "方案贴不贴风格、做不做得出",
+   "file": "10-plan.md",
+   "reference": "00-style.md",
+   "criteria": "风格要求里提到的每一个效果和限制（性能、透明、阴影、有没有贴图）都在方案里有对应，或者在“不做”里说明了原因\n每个效果都写清了在着色器里用什么数据怎么算，不是只有形容词\n灯光按 URP 的分法处理：只有平行光是主光；风格要求里的手电筒、灯泡、火把这类光源是附加光，方案用附加光来算它们\n所有效果都能在一个 .shader 文件里做出来，不依赖额外脚本、后处理、自定义 include 文件，也不要求美术必须提供贴图\n可调参数每一行都有下划线开头的英文名、类型、默认值和作用，类型只用 Float、Range、Color、Vector、2D\n参数的方向是顺的：调大，对应的效果变强\n可调参数不超过 10 个，每个参数都对应“画面效果”或“光照”里的某一条\n没有和风格要求相冲突的效果（比如要求暗处真的黑，却加了提亮暗处的环境光）",
+   "on_fail": "plan",
+   "max_tries": 4
+  },
+  {
+   "id": "shader",
+   "kind": "station",
+   "title": "写着色器",
+   "input": "10-plan.md",
+   "refs": [
+    "00-style.md"
+   ],
+   "output": "20-shader.shader",
+   "timeout": 600,
+   "spec": "照视觉方案（输入）写一个 Unity URP 着色器文件。风格要求（参考材料）只用来理解方案，效果和参数以方案为准。\n目标版本：Unity 2021.3 LTS 及以后（URP 12 及以后）。只用这些版本都有的 ShaderLibrary 函数，比如 TransformObjectToHClip、TransformObjectToWorld、TransformObjectToWorldNormal、GetWorldSpaceNormalizeViewDir、GetMainLight、SampleSH、ComputeFogFactor、MixFog、TransformWorldToShadowCoord、ApplyShadowBias。\n着色器名字写成 Shader \"AIWorkflow/英文风格名\"。\n方案“可调参数”里的每个参数都做成 Properties，名字、类型、默认值照抄，不加方案以外的参数。\n噪声、色相变换之类的辅助函数直接写在这个文件里。\n半透明：Tags 里 \"Queue\" = \"Transparent\"、\"RenderType\" = \"Transparent\"，Pass 里写 Blend 和 ZWrite Off。\n接收阴影：主体 Pass 加 #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN 和 #pragma multi_compile_fragment _ _SHADOWS_SOFT，用 TransformWorldToShadowCoord 和 GetMainLight(shadowCoord) 取阴影。\n投射阴影：加一个 LightMode 为 ShadowCaster 的 Pass，include Shadows.hlsl，自己声明 float3 _LightDirection;，顶点里用 ApplyShadowBias(positionWS, normalWS, _LightDirection) 再转到裁剪空间，并按 UNITY_REVERSED_Z 把 z 夹到近平面内；不要 include ShadowCasterPass.hlsl。\n要附加光（聚光灯、点光）：主体 Pass 加 #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS 和 #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS，片元里 for (uint i = 0; i < GetAdditionalLightsCount(); ++i) { Light l = GetAdditionalLight(i, positionWS, half4(1,1,1,1)); … }，颜色乘 l.distanceAttenuation * l.shadowAttenuation。\n要雾：#pragma multi_compile_fog，顶点里 ComputeFogFactor，片元最后 MixFog。\n代码里的注释用英文，简短。"
+  },
+  {
+   "id": "urp-check",
+   "kind": "gate",
+   "judge": "machine",
+   "title": "URP 能不能接受",
+   "file": "20-shader.shader",
+   "checks": {
+    "urp_shader": true
+   },
+   "on_fail": "shader",
+   "max_tries": 3
+  },
+  {
+   "id": "shader-check",
+   "kind": "gate",
+   "judge": "ai",
+   "title": "照方案做了、不会编译报错",
+   "file": "20-shader.shader",
+   "reference": "10-plan.md",
+   "criteria": "方案“可调参数”里的每个参数都在 Properties 里，名字、类型、默认值一致；没有方案以外的参数\n方案“画面效果”里的每一条在代码里都有对应的计算；“用在哪”和“光照”里的要求（透明、受光、接收和投射阴影、雾）都照做了\n方案里要求受附加光（手电筒、点光等）的，代码里确实逐个算了附加光，而不是只用了 GetMainLight\n代码里用到的每个变量和函数，要么在这个文件里定义了，要么是 URP ShaderLibrary 里确实存在的函数或宏，没有编造的名字\n赋值、运算和函数参数的向量维度对得上（比如 float3 不能直接赋给 float4 变量），函数调用的参数个数对，不会出现编译错误\n顶点输出结构的每个成员都有语义（SV_POSITION 或 TEXCOORDn），片元函数的返回值带 SV_Target\n半透明的着色器写了 Blend、ZWrite Off 和 \"Queue\" = \"Transparent\"；不透明的没有这些",
+   "on_fail": "shader",
+   "max_tries": 3
+  },
+  {
+   "id": "review",
+   "kind": "gate",
+   "judge": "human",
+   "title": "在 Unity 里验收",
+   "file": "20-shader.shader",
+   "points": "把 20-shader.shader 复制进 URP 工程的 Assets 文件夹：Console 里没有红字；选中它，Inspector 里写着 SRP Batcher compatible。新建一个材质选上它，挂到一个球和一个真实模型上，在有主光的场景里看：像不像要的风格，每个参数拖一拖都有反应。",
+   "on_fail": "shader"
+  },
+  {
+   "id": "out",
+   "kind": "product",
+   "title": "URP 着色器文件",
+   "file": "20-shader.shader"
+  }
+ ],
+ "layout": {}
+}

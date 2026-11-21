@@ -16,6 +16,8 @@ import time
 import traceback
 from pathlib import Path
 
+import shader_check
+
 # How to call each vendor's CLI agent without a chat window. The task goes in on stdin.
 WORKERS = {
     "claude": ["claude", "-p", "Follow the task in the piped input. Print only the product text.",
@@ -183,6 +185,8 @@ def gate_requirements(checks: dict) -> list:
         out.append("必须原样包含这些文字：" + "、".join(f"「{s}」" for s in checks["must_include"]))
     if checks.get("keep_backticks_from"):
         out.append(f"{checks['keep_backticks_from']} 里用反引号（`）括起来的内容，必须连同反引号原样保留，不翻译、不改动")
+    if checks.get("urp_shader"):
+        out += shader_check.RULES
     return out
 
 
@@ -244,6 +248,8 @@ def judge_machine(checks: dict, text: str, item_dir: Path = None) -> list:
     for must in checks.get("must_include") or []:
         if must not in text:
             out.append((f"缺少「{must}」", f"产出里必须原样出现「{must}」，现在没有"))
+    if checks.get("urp_shader"):  # static checks only; compiling needs Unity itself
+        out += shader_check.check(text)
     return out
 
 
@@ -579,7 +585,7 @@ DESIGN_RULES = """你是一条产线的设计者。下面是这条线现在的�
 定义的格式：
 - flow 是主线顺序，第一个节点 kind 是 source（原料），最后一个是 product（成品）。只支持一条主线加退回，不支持并行。
 - station（站）：id、title、input（主要读哪个文件）、output（写哪个文件，名字形如 "30-名字.md"）、spec（写给工人看的说明：这一步做什么、做成什么样）、timeout（秒）；可选 model（这一站单独用的模型，比如 "sonnet"；需要判断力的站用强一点的，照抄整理类的站用线上默认的便宜模型）；可选 refs（还要一并参考的文件名列表，比如原料或更前面某一站的产出）。
-- gate（门）且 judge 为 machine：title、file（查哪个文件）、checks（只支持这六项：min_chars、max_chars、single_paragraph、no_preamble、must_include——每一件活的产出里都必须原样出现的固定文字，比如小标题；keep_backticks_from——填一个文件名，那个文件里反引号括起来的内容必须原样出现在产出里）。门的标准必须对每一件原料都成立，不能把某一份样例里的具体内容写死在标准里、on_fail（不合格退回前面的哪个站）、max_tries（同一件活最多写几次）。程序自动查，不花额度。
+- gate（门）且 judge 为 machine：title、file（查哪个文件）、checks（只支持这七项：min_chars、max_chars、single_paragraph、no_preamble、must_include——每一件活的产出里都必须原样出现的固定文字，比如小标题；keep_backticks_from——填一个文件名，那个文件里反引号括起来的内容必须原样出现在产出里；urp_shader——填 true，产出必须是一个能被 Unity URP 接受的 .shader 文件，静态查结构、管线标签、内置管线残留、SRP Batcher 兼容）。门的标准必须对每一件原料都成立，不能把某一份样例里的具体内容写死在标准里、on_fail（不合格退回前面的哪个站）、max_tries（同一件活最多写几次）。程序自动查，不花额度。
 - gate 且 judge 为 ai：title、file、criteria（合格标准，一行一条，要具体到能判对错）、on_fail、max_tries；可选 reference（质检时对照哪个文件，默认是 on_fail 那一站的输入文件）。由另一个 AI 读懂内容来判，用于机器查不了的标准，比如“没有编造”“没有漏项”。
 - gate 且 judge 为 human：title、file、points（验收要点）、on_fail。
 - 能让机器判的不让 AI 判，能让 AI 判的不让人判；人判的门只留给必须由人拿主意的事。

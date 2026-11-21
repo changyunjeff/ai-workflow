@@ -25,10 +25,11 @@
 | conductor 当执行器的实测结果、毛刺、怎么卸 | `docs/03-动手对比结果.md` |
 | **用户说"原料是什么、成品是什么"，要设计一条新线** | `docs/06-怎么从两头设计一条线.md` |
 | 第一条真线（人物原画转多方向像素动画）的调研、草案、执行器缺什么 | `docs/07-第一条真线-原画转像素动画.md` |
+| URP 风格着色器线（风格描述进、Unity 着色器文件出）：机器门查什么、什么要到 Unity 里验收、试跑记录 | `docs/08-URP风格着色器线.md` |
 | 画布页面的范围、设计决定、正式版和示意稿的差别 | `docs/04-画布页面.md` |
 | 产线在磁盘上的样子、状态文件、接口、怎么启动和测试 | `docs/05-产线文件与接口.md` |
-| 执行器、本机服务、页面代码、接口测试 | `app/engine.py`、`app/server.py`、`app/web/`、`app/tests/` |
-| 产线（一条线一个文件夹） | `lines/`：玩具线 `article-summary`、会议纪要线 `meeting-minutes`、技术文档翻译线 `tech-translation` |
+| 执行器、本机服务、页面代码、接口测试 | `app/engine.py`、`app/server.py`、`app/web/`、`app/tests/`；着色器机器门 `app/shader_check.py` |
+| 产线（一条线一个文件夹） | `lines/`：玩具线 `article-summary`、会议纪要线 `meeting-minutes`、技术文档翻译线 `tech-translation`、URP 风格着色器线 `urp-style-shader` |
 | 启动画布页面 | 双击 `start-canvas.cmd` |
 | 画布页面示意稿（已被正式版取代，留作对照） | `ui/mockup/canvas.html` |
 | conductor 对比试验用的旧样线（可删） | `trials/toy-summary/` |
